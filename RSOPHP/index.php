@@ -1,9 +1,9 @@
 <?php
 // Connexion à la base de données
 $servername = "localhost";
-$username = "superviseur";
+$username = "adminJonathan";
 $password = "azerty";
-$dbname = "RESEAU_LISSER";
+$dbname = "RESEAU_IRO_O";
 
 $conn = new mysqli($servername, $username, $password, $dbname);
 
