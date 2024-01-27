@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 import mysql.connector
 import subprocess
+import socket  # Ajout de la bibliothèque socket
 
 def scan_reseau():
     try:
@@ -14,7 +15,14 @@ def scan_reseau():
                 if len(elements) >= 4:
                     ip = elements[1][1:-1]  # Supprimer les parenthèses autour de l'adresse IP
                     mac = elements[3]
-                    postes.append((ip, mac))
+
+                    # Résoudre le nom d'hôte associé à l'adresse IP
+                    try:
+                        nom_appareil, _, _ = socket.gethostbyaddr(ip)
+                    except socket.herror:
+                        nom_appareil = ""
+
+                    postes.append((nom_appareil, ip, mac))
         
         return postes
     except Exception as e:
@@ -32,8 +40,8 @@ def inserer_postes(postes):
 
     cursor.execute("DELETE FROM element")
 
-    for ip, mac in postes:
-        cursor.execute("INSERT INTO element (nom, ip, mac) VALUES (%s, %s, %s)", ("", ip, mac))
+    for nom, ip, mac in postes:
+        cursor.execute("INSERT INTO element (nom, ip, mac) VALUES (%s, %s, %s)", (nom, ip, mac))
     
     connection.commit()
     cursor.close()
@@ -44,4 +52,3 @@ if __name__ == "__main__":
     postes_detectes = scan_reseau()
     inserer_postes(postes_detectes)
     print(f"{len(postes_detectes)} postes ont été détectés et enregistrés dans la base de données.")
-
