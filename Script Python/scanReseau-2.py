@@ -1,29 +1,38 @@
 #!/usr/bin/python3
 import mysql.connector
-import subprocess
-import socket  # Ajout de la bibliothèque socket
+import nmap
+import socket
+
+def get_mac(ip):
+    # Utiliser une méthode pour obtenir l'adresse MAC (par exemple, scapy)
+    pass
 
 def scan_reseau():
     try:
-        resultat = subprocess.check_output(["/usr/sbin/arp", "-a"]).decode("utf-8")
-        lignes = resultat.split("\n")
         postes = []
+        pc_count = 1
 
-        for ligne in lignes:
-            if "incomplet" not in ligne:  # Ignorer les entrées incomplètes
-                elements = ligne.split()
-                if len(elements) >= 4:
-                    ip = elements[1][1:-1]  # Supprimer les parenthèses autour de l'adresse IP
-                    mac = elements[3]
+        nm = nmap.PortScanner()
+        nm.scan(hosts='192.168.1.0/24', arguments='-n -sP')
 
-                    # Résoudre le nom d'hôte associé à l'adresse IP
-                    try:
-                        nom_appareil, _, _ = socket.gethostbyaddr(ip)
-                    except socket.herror:
-                        nom_appareil = ""
+        for ip, result in nm.all_hosts().items():
+            mac = get_mac(ip)
 
-                    postes.append((nom_appareil, ip, mac))
-        
+            try:
+                nom_appareil, _, _ = socket.gethostbyaddr(ip)
+            except socket.herror:
+                nom_appareil = ""
+
+            if nom_appareil == "":
+                if result['status']['state'] == 'up':
+                    if ip.endswith(".254") or "gateway" in result['hostnames'][0]['name'].lower():
+                        nom_appareil = "Routeur"
+                    else:
+                        nom_appareil = f"PC-{pc_count}"
+                        pc_count += 1
+
+                postes.append((nom_appareil, ip, mac))
+
         return postes
     except Exception as e:
         print(f"Erreur lors du scan du réseau : {e}")
