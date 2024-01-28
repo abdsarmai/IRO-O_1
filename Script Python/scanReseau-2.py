@@ -17,7 +17,7 @@ def scan_reseau():
         postes = []
 
         nm = nmap.PortScanner()
-        nm.scan(hosts='192.168.1.0/24', arguments='-n -sP')
+        nm.scan(hosts='192.168.234.0/24', arguments='-n -sP')
 
         for result in nm.all_hosts():
             ip = result['host']
