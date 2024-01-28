@@ -1,39 +1,48 @@
 #!/usr/bin/python3
 import mysql.connector
-import nmap
+import subprocess
 import socket
+from scapy.all import ARP, Ether, srp
 
 def get_mac(ip):
-    # Utiliser une méthode pour obtenir l'adresse MAC (par exemple, scapy) #N
-    pass
+    arp = ARP(pdst=ip)
+    ether = Ether(dst="ff:ff:ff:ff:ff:ff")
+    packet = ether/arp
+    result = srp(packet, timeout=3, verbose=0)[0]
+
+    if result:
+        return result[0][1].src
+    else:
+        return None
 
 def scan_reseau():
     try:
+        resultat = subprocess.check_output(["/usr/sbin/arp", "-a"]).decode("utf-8")
+        lignes = resultat.split("\n")
         postes = []
         pc_count = 1
 
-        nm = nmap.PortScanner()
-        nm.scan(hosts='192.168.134.0/24', arguments='-n -sP')
+        for ligne in lignes:
+            if "incomplet" not in ligne:
+                elements = ligne.split()
+                if len(elements) >= 4:
+                    ip = elements[1][1:-1]
+                    mac = get_mac(ip)
 
-        for result in nm.all_hosts():
-            ip = result['host']
-            mac = get_mac(ip)
+                    try:
+                        nom_appareil, _, _ = socket.gethostbyaddr(ip)
+                    except socket.herror:
+                        nom_appareil = ""
 
-            try:
-                nom_appareil, _, _ = socket.gethostbyaddr(ip)
-            except socket.herror:
-                nom_appareil = ""
-
-            if nom_appareil == "":
-                if result['status']['state'] == 'up':
-                    if ip.endswith(".254") or "gateway" in result['hostnames'][0]['name'].lower():
-                        nom_appareil = "Routeur"
-                    else:
-                        nom_appareil = f"PC-{pc_count}"
-                        pc_count += 1
-
-                postes.append((nom_appareil, ip, mac))
-
+                    if nom_appareil == "":
+                        if ip.endswith(".254") or "gateway" in ligne.lower():
+                            nom_appareil = "Routeur"
+                        else:
+                            nom_appareil = f"PC-{pc_count}"
+                            pc_count += 1
+                    
+                    postes.append((nom_appareil, ip, mac))
+        
         return postes
     except Exception as e:
         print(f"Erreur lors du scan du réseau : {e}")
