@@ -1,45 +1,47 @@
 #!/usr/bin/python3
-import subprocess
-import mysql.connector
+import nmap
+from scapy.all import ARP, Ether, srp
 
-def scan_reseau():
-    resultat = subprocess.check_output(["arp", "-a"]).decode("utf-8")
-    lignes = resultat.split("\n")
-    postes = []
+def scan_with_nmap(ip_range):
+    nm = nmap.PortScanner()
+    nm.scan(hosts=ip_range, arguments='-sn')
 
-    for ligne in lignes:
-        if "incomplet" not in ligne:
-            elements = ligne.split()
-            if len(elements) >= 4:
-                ip = elements[1][1:-1]  # Correction de la récupération de l'adresse IP
-                mac = elements[3]
-                postes.append((ip, mac))
+    devices = []
+    for host in nm.all_hosts():
+        devices.append({
+            'ip': host,
+            'hostname': nm[host].hostname() if 'hostname' in nm[host] else ''
+        })
 
-    return postes
+    return devices
 
-def inserer_postes(postes):
-    connection = mysql.connector.connect(
-        host='localhost',
-        user='superviseur',
-        password='azerty',
-        database='RESEAU_LISSER'
-    )
-    cursor = connection.cursor()
+def get_mac_addresses(ip_range):
+    arp_request = ARP(pdst=ip_range)
+    broadcast = Ether(dst="ff:ff:ff:ff:ff:ff")
+    arp_request_broadcast = broadcast/arp_request
+    answered_list = srp(arp_request_broadcast, timeout=1, verbose=False)[0]
 
-    # Supprimer les anciens éléments de la table avant d'insérer les nouveaux
-    cursor.execute("DELETE FROM element")
+    devices = []
+    for element in answered_list:
+        devices.append({
+            'ip': element[1].psrc,
+            'mac': element[1].hwsrc
+        })
 
-    for poste in postes:
-        # Utilisation d'une requête paramétrée pour éviter les injections SQL
-        cursor.execute("INSERT INTO element (ip, mac) VALUES (%s, %s)", poste)
+    return devices
 
-    # Valider les changements dans la base de données
-    connection.commit()
+if __name__ == "__main__":
+    # Spécifiez la plage d'adresses IP que vous souhaitez scanner
+    target_ip_range = "192.168.1.1/24"
 
-    # Fermer la connexion
-    cursor.close()
-    connection.close()
+    nmap_results = scan_with_nmap(target_ip_range)
+    arp_results = get_mac_addresses(target_ip_range)
 
-# Exécution des fonctions
-postes_reseau = scan_reseau()
-inserer_postes(postes_reseau)
+    # Afficher les résultats
+    print("Résultats de Nmap:")
+    for device in nmap_results:
+        print(f"IP: {device['ip']}, Hostname: {device['hostname']}")
+
+    print("\nRésultats ARP:")
+    for device in arp_results:
+        print(f"IP: {device['ip']}, MAC: {device['mac']}")
