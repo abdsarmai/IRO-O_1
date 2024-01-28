@@ -1,41 +1,35 @@
 #!/usr/bin/python3
 import mysql.connector
-import nmap
+import subprocess
 import socket
-from datetime import datetime
 
-def get_mac(ip):
-    # Utiliser une méthode pour obtenir l'adresse MAC (par exemple, scapy)
-    pass
+def determine_nom(ip, mac):
+    # Si l'adresse IP se termine par .254 ou contient "_gateway", attribuer le nom "Routeur"
+    if ip.endswith(".254") or "_gateway" in ip:
+        return "Routeur"
 
-def generate_pc_name():
-    current_date = datetime.now().strftime('%y%m%d')
-    return f"PC-{current_date}"
+    # Si le nom d'hôte est trouvé, l'utiliser
+    try:
+        nom_appareil, _, _ = socket.gethostbyaddr(ip)
+        return nom_appareil
+    except socket.herror:
+        # Si le nom n'est pas trouvé, attribuer le nom "PC-[e]"
+        return f"PC-{len(postes) + 1}"
 
 def scan_reseau():
     try:
+        resultat = subprocess.check_output(["/usr/sbin/arp", "-a"]).decode("utf-8")
+        lignes = resultat.split("\n")
         postes = []
 
-        nm = nmap.PortScanner()
-        nm.scan(hosts='192.168.234.0/24', arguments='-n -sP')
-
-        for result in nm.all_hosts():
-            ip = result['host']
-            mac = get_mac(ip)
-
-            try:
-                nom_appareil, _, _ = socket.gethostbyaddr(ip)
-            except socket.herror:
-                nom_appareil = ""
-
-            if nom_appareil == "":
-                if result['status']['state'] == 'up':
-                    if ip.endswith(".254") or "gateway" in result['hostnames'][0]['name'].lower():
-                        nom_appareil = "Routeur"
-                    else:
-                        nom_appareil = generate_pc_name()
-
-                postes.append((nom_appareil, ip, mac))
+        for ligne in lignes:
+            if "incomplet" not in ligne:
+                elements = ligne.split()
+                if len(elements) >= 4:
+                    ip = elements[1][1:-1]
+                    mac = elements[3]
+                    nom = determine_nom(ip, mac)
+                    postes.append((nom, ip, mac))
 
         return postes
     except Exception as e:
@@ -59,7 +53,6 @@ def inserer_postes(postes):
     connection.commit()
     cursor.close()
     connection.close()
-
 
 if __name__ == "__main__":
     postes_detectes = scan_reseau()
