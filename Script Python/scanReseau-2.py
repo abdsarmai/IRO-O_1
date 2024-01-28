@@ -1,47 +1,68 @@
 #!/usr/bin/python3
-import nmap
-from scapy.all import ARP, Ether, srp
+import mysql.connector
+import subprocess
+import socket
 
-def scan_with_nmap(ip_range):
-    nm = nmap.PortScanner()
-    nm.scan(hosts=ip_range, arguments='-sn')
+def get_name_from_ip(ip):
+    try:
+        # Utiliser une requête DNS inverse pour obtenir le nom d'hôte associé à l'adresse IP
+        nom_hote, _, _ = socket.gethostbyaddr(ip)
+        return nom_hote
+    except socket.herror:
+        # En cas d'erreur, renvoyer une chaîne générique
+        return "PC"
 
-    devices = []
-    for host in nm.all_hosts():
-        devices.append({
-            'ip': host,
-            'hostname': nm[host].hostname() if 'hostname' in nm[host] else ''
-        })
+def scan_reseau():
+    try:
+        resultat = subprocess.check_output(["/usr/sbin/arp", "-a"]).decode("utf-8")
+        lignes = resultat.split("\n")
+        postes = []
 
-    return devices
+        # Dictionnaire pour stocker le nombre d'occurrences de chaque nom
+        nom_occurrences = {}
 
-def get_mac_addresses(ip_range):
-    arp_request = ARP(pdst=ip_range)
-    broadcast = Ether(dst="ff:ff:ff:ff:ff:ff")
-    arp_request_broadcast = broadcast/arp_request
-    answered_list = srp(arp_request_broadcast, timeout=1, verbose=False)[0]
+        for ligne in lignes:
+            if "incomplet" not in ligne:  # Ignorer les entrées incomplètes
+                elements = ligne.split()
+                if len(elements) >= 4:
+                    ip = elements[1][1:-1]  # Supprimer les parenthèses autour de l'adresse IP
+                    mac = elements[3]
+                    nom = get_name_from_ip(ip)  # Obtenir le nom à partir de l'adresse IP
 
-    devices = []
-    for element in answered_list:
-        devices.append({
-            'ip': element[1].psrc,
-            'mac': element[1].hwsrc
-        })
+                    # Vérifier si le nom est déjà dans le dictionnaire
+                    if nom in nom_occurrences:
+                        nom_occurrences[nom] += 1
+                        nom_complet = f"{nom}-{nom_occurrences[nom]}"
+                    else:
+                        nom_occurrences[nom] = 1
+                        nom_complet = nom
 
-    return devices
+                    postes.append((ip, mac, nom_complet))
+        
+        return postes
+    except Exception as e:
+        print(f"Erreur lors du scan du réseau : {e}")
+        return []
+
+def inserer_postes(postes):
+    connection = mysql.connector.connect(
+        host="localhost",
+        user="superviseur",
+        password="azerty",
+        database="RESEAU_LISSER"
+    )
+    cursor = connection.cursor()
+
+    cursor.execute("DELETE FROM element")
+
+    for ip, mac, nom in postes:
+        cursor.execute("INSERT INTO element (nom, ip, mac) VALUES (%s, %s, %s)", (nom, ip, mac))
+    
+    connection.commit()
+    cursor.close()
+    connection.close()
 
 if __name__ == "__main__":
-    # Spécifiez la plage d'adresses IP que vous souhaitez scanner
-    target_ip_range = "192.168.1.1/24"
-
-    nmap_results = scan_with_nmap(target_ip_range)
-    arp_results = get_mac_addresses(target_ip_range)
-
-    # Afficher les résultats
-    print("Résultats de Nmap:")
-    for device in nmap_results:
-        print(f"IP: {device['ip']}, Hostname: {device['hostname']}")
-
-    print("\nRésultats ARP:")
-    for device in arp_results:
-        print(f"IP: {device['ip']}, MAC: {device['mac']}")
+    postes_detectes = scan_reseau()
+    inserer_postes(postes_detectes)
+    print(f"{len(postes_detectes)} postes ont été détectés et enregistrés dans la base de données.")
