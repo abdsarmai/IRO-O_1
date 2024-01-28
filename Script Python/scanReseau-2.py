@@ -30,7 +30,7 @@ def scan_reseau():
 
             if nom_appareil == "":
                 if result['status']['state'] == 'up':
-                    if ip.endswith(".254") or "_gateway" in result['hostnames'][0]['name'].lower():
+                    if ip.endswith(".254") or "gateway" in result['hostnames'][0]['name'].lower():
                         nom_appareil = "Routeur"
                     else:
                         nom_appareil = generate_pc_name()
