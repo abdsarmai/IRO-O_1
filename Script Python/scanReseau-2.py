@@ -4,7 +4,7 @@ import nmap
 import socket
 
 def get_mac(ip):
-    # Utiliser une méthode pour obtenir l'adresse MAC (par exemple, scapy)
+    # Utiliser une méthode pour obtenir l'adresse MAC (par exemple, scapy) #N
     pass
 
 def scan_reseau():
@@ -13,9 +13,10 @@ def scan_reseau():
         pc_count = 1
 
         nm = nmap.PortScanner()
-        nm.scan(hosts='192.168.1.0/24', arguments='-n -sP')
+        nm.scan(hosts='192.168.134.0/24', arguments='-n -sP')
 
-        for ip, result in nm.all_hosts().items():
+        for result in nm.all_hosts():
+            ip = result['host']
             mac = get_mac(ip)
 
             try:
