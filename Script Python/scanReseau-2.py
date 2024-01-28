@@ -4,6 +4,21 @@ import subprocess
 import socket
 
 def get_name_from_ip(ip):
+    if ip.endswith(".184"):
+        return "routeur"	
+    if ip.endswith("IMP"):
+        return "routeur"
+    
+    ip_to_name_mapping = {
+        "172.20.30.126": "PC-17",
+        "172.20.30.140": "PC-17",
+        "172.20.30.121": "PC-17"
+    }
+    
+    # Si l'adresse IP correspond à un PC-17, retourner le nom exact
+    if ip in ip_to_name_mapping:
+        return ip_to_name_mapping[ip]
+
     try:
         # Utiliser une requête DNS inverse pour obtenir le nom d'hôte associé à l'adresse IP
         nom_hote, _, _ = socket.gethostbyaddr(ip)
@@ -18,9 +33,6 @@ def scan_reseau():
         lignes = resultat.split("\n")
         postes = []
 
-        # Dictionnaire pour stocker le nombre d'occurrences de chaque nom
-        nom_occurrences = {}
-
         for ligne in lignes:
             if "incomplet" not in ligne:  # Ignorer les entrées incomplètes
                 elements = ligne.split()
@@ -28,16 +40,7 @@ def scan_reseau():
                     ip = elements[1][1:-1]  # Supprimer les parenthèses autour de l'adresse IP
                     mac = elements[3]
                     nom = get_name_from_ip(ip)  # Obtenir le nom à partir de l'adresse IP
-
-                    # Vérifier si le nom est déjà dans le dictionnaire
-                    if nom in nom_occurrences:
-                        nom_occurrences[nom] += 1
-                        nom_complet = f"{nom}-{nom_occurrences[nom]}"
-                    else:
-                        nom_occurrences[nom] = 1
-                        nom_complet = nom
-
-                    postes.append((ip, mac, nom_complet))
+                    postes.append((ip, mac, nom))
         
         return postes
     except Exception as e:
