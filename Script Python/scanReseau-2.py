@@ -1,47 +1,58 @@
 #!/usr/bin/python3
 import json
 import subprocess
+import socket
+
+def get_name_from_ip(ip):
+    try:
+        nom_hote, _, _ = socket.gethostbyaddr(ip)
+        return nom_hote
+    except socket.herror:
+        return "Inconnu"
 
 def scan_reseau():
     try:
         resultat = subprocess.check_output(["/usr/sbin/arp", "-a"]).decode("utf-8")
         lignes = resultat.split("\n")
-        ip_addresses = []
+        postes = []
 
         for ligne in lignes:
             if "incomplet" not in ligne:
                 elements = ligne.split()
                 if len(elements) >= 4:
                     ip = elements[1][1:-1]
-                    ip_addresses.append(ip)
+                    mac = elements[3]
+                    nom = get_name_from_ip(ip)
+                    postes.append({"nom": nom, "ip": ip, "mac": mac})
         
-        return ip_addresses
+        return postes
     except Exception as e:
         print(f"Erreur lors du scan du réseau : {e}")
         return []
 
-def generer_page_php(ip_addresses):
-    with open("afficher_adresses.php", "w") as php_file:
+def generer_page_php(postes):
+    with open("afficher_postes.php", "w") as php_file:
         php_file.write("<!DOCTYPE html>\n")
         php_file.write("<html lang=\"en\">\n")
         php_file.write("<head>\n")
         php_file.write("    <meta charset=\"UTF-8\">\n")
         php_file.write("    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n")
-        php_file.write("    <title>Affichage des adresses IP</title>\n")
+        php_file.write("    <title>Affichage des postes</title>\n")
         php_file.write("</head>\n")
         php_file.write("<body>\n")
-        php_file.write("    <h1>Adresses IP détectées</h1>\n")
-        php_file.write("    <ul>\n")
+        php_file.write("    <h1>Postes détectés</h1>\n")
+        php_file.write("    <table border=\"1\">\n")
+        php_file.write("        <tr><th>Nom</th><th>IP</th><th>MAC</th></tr>\n")
 
-        for ip in ip_addresses:
-            php_file.write(f"        <li>{ip}</li>\n")
+        for poste in postes:
+            php_file.write(f"        <tr><td>{poste['nom']}</td><td>{poste['ip']}</td><td>{poste['mac']}</td></tr>\n")
 
-        php_file.write("    </ul>\n")
+        php_file.write("    </table>\n")
         php_file.write("</body>\n")
         php_file.write("</html>\n")
 
 if __name__ == "__main__":
-    ip_addresses_detectees = scan_reseau()
+    postes_detectes = scan_reseau()
     
-    generer_page_php(ip_addresses_detectees)
-    print(f"{len(ip_addresses_detectees)} adresses IP ont été détectées et la page PHP a été générée.")
+    generer_page_php(postes_detectes)
+    print(f"{len(postes_detectes)} postes ont été détectés et la page PHP a été générée.")
