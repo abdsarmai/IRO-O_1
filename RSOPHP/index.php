@@ -1,4 +1,8 @@
 <?php
+// Exécute le script Python et récupère la sortie
+$output = shell_exec('./scanreseau-2.py 2>&1');
+// Si vous avez des erreurs dans la sortie, elles seront également affichées à des fins de débogage
+
 // Connexion à la base de données
 $servername = "localhost";
 $username = "adminJonathan";
@@ -25,30 +29,27 @@ echo '<body>';
 echo '<h1>Visualisation des Périphériques dans le réseau</h1>';
 echo '<div class="container">';
 
+// Utilise les données récupérées du script Python
+$postes_detectes = json_decode($output, true);  // Assurez-vous que le format de sortie est adapté à votre besoin
+
 foreach ($types as $type) {
     echo "<h2>$type</h2>";
     echo '<table><tr>';
 
-    $sql = "SELECT nom, ip FROM element WHERE nom LIKE '%$type%'";
-    $result = $conn->query($sql);
+    foreach ($postes_detectes as $poste) {
+        // Utilise les données pour générer le contenu
+        $icon = strtolower($type) . '-co.png';
 
-    if ($result->num_rows > 0) {
-        while ($row = $result->fetch_assoc()) {
-            $icon = strtolower($type) . '-co.png';
-            
-            echo '<td>';
-            echo '<div class="device">';
-            echo "<img src='images/$icon' alt='$type'>";
-            echo '<div class="device-info">';
-            echo '<p>Nom de l\'appareil: ' . $row['nom'] . '</p>';
-            echo '<p>Adresse IP: ' . $row['ip'] . '</p>';
-            echo '<p class="device-status online">Statut: En ligne</p>';
-            echo '</div>';
-            echo '</div>';
-            echo '</td>';
-        }
-    } else {
-        echo "<td>Aucun périphérique de type $type trouvé.</td>";
+        echo '<td>';
+        echo '<div class="device">';
+        echo "<img src='images/$icon' alt='$type'>";
+        echo '<div class="device-info">';
+        echo '<p>Nom de l\'appareil: ' . $poste['nom'] . '</p>';
+        echo '<p>Adresse IP: ' . $poste['ip'] . '</p>';
+        echo '<p class="device-status online">Statut: En ligne</p>';
+        echo '</div>';
+        echo '</div>';
+        echo '</td>';
     }
 
     echo '</tr></table>';
