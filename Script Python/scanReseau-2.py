@@ -8,7 +8,12 @@ def get_name_from_ip(ip):
         return "routeur"	
     if ip.endswith("IMP"):
         return "routeur"
-    
+
+    # Ajouter les trois PC spécifiques à la section "pc"
+    pc_ips = ["172.20.30.126", "172.20.30.140", "172.20.30.121"]
+    if ip in pc_ips:
+        return "pc"
+
     ip_to_name_mapping = {
         "172.20.30.126": "PC-17",
         "172.20.30.140": "PC-17",
@@ -18,6 +23,15 @@ def get_name_from_ip(ip):
     # Si l'adresse IP correspond à un PC-17, retourner le nom exact
     if ip in ip_to_name_mapping:
         return ip_to_name_mapping[ip]
+
+    try:
+        # Utiliser une requête DNS inverse pour obtenir le nom d'hôte associé à l'adresse IP
+        nom_hote, _, _ = socket.gethostbyaddr(ip)
+        return nom_hote
+    except socket.herror:
+        # En cas d'erreur, renvoyer une chaîne générique
+        return "PC"
+
 
     try:
         # Utiliser une requête DNS inverse pour obtenir le nom d'hôte associé à l'adresse IP
