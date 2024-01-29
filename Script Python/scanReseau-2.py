@@ -1,15 +1,15 @@
 #!/usr/bin/python3
+import json
 import mysql.connector
 import subprocess
 import socket
 
 def get_name_from_ip(ip):
-    if ip.endswith(".184"):
+    if ip.endswith(".254"):
         return "routeur"	
     if ip.endswith("IMP"):
-        return "routeur"
+        return "Imprimante"
 
-    # Ajouter les trois PC spécifiques à la section "pc"
     pc_ips = ["172.20.30.126", "172.20.30.140", "172.20.30.121"]
     if ip in pc_ips:
         return "pc"
@@ -20,25 +20,13 @@ def get_name_from_ip(ip):
         "172.20.30.121": "PC-17"
     }
     
-    # Si l'adresse IP correspond à un PC-17, retourner le nom exact
     if ip in ip_to_name_mapping:
         return ip_to_name_mapping[ip]
 
     try:
-        # Utiliser une requête DNS inverse pour obtenir le nom d'hôte associé à l'adresse IP
         nom_hote, _, _ = socket.gethostbyaddr(ip)
         return nom_hote
     except socket.herror:
-        # En cas d'erreur, renvoyer une chaîne générique
-        return "PC"
-
-
-    try:
-        # Utiliser une requête DNS inverse pour obtenir le nom d'hôte associé à l'adresse IP
-        nom_hote, _, _ = socket.gethostbyaddr(ip)
-        return nom_hote
-    except socket.herror:
-        # En cas d'erreur, renvoyer une chaîne générique
         return "PC"
 
 def scan_reseau():
@@ -48,20 +36,26 @@ def scan_reseau():
         postes = []
 
         for ligne in lignes:
-            if "incomplet" not in ligne:  # Ignorer les entrées incomplètes
+            if "incomplet" not in ligne:
                 elements = ligne.split()
                 if len(elements) >= 4:
-                    ip = elements[1][1:-1]  # Supprimer les parenthèses autour de l'adresse IP
+                    ip = elements[1][1:-1]
                     mac = elements[3]
-                    nom = get_name_from_ip(ip)  # Obtenir le nom à partir de l'adresse IP
-                    postes.append((ip, mac, nom))
+                    nom = get_name_from_ip(ip)
+                    postes.append({"nom": nom, "ip": ip, "mac": mac})
         
         return postes
     except Exception as e:
         print(f"Erreur lors du scan du réseau : {e}")
         return []
 
-def inserer_postes(postes):
+def inserer_postes_json(postes):
+    data = {"postes": postes}
+
+    with open("postes.json", "w") as json_file:
+        json.dump(data, json_file)
+
+def inserer_postes_mysql(postes):
     connection = mysql.connector.connect(
         host="localhost",
         user="superviseur",
@@ -72,8 +66,9 @@ def inserer_postes(postes):
 
     cursor.execute("DELETE FROM element")
 
-    for ip, mac, nom in postes:
-        cursor.execute("INSERT INTO element (nom, ip, mac) VALUES (%s, %s, %s)", (nom, ip, mac))
+    for poste in postes:
+        cursor.execute("INSERT INTO element (nom, ip, mac) VALUES (%s, %s, %s)",
+                       (poste["nom"], poste["ip"], poste["mac"]))
     
     connection.commit()
     cursor.close()
@@ -81,5 +76,9 @@ def inserer_postes(postes):
 
 if __name__ == "__main__":
     postes_detectes = scan_reseau()
-    inserer_postes(postes_detectes)
+    
+    inserer_postes_mysql(postes_detectes)
     print(f"{len(postes_detectes)} postes ont été détectés et enregistrés dans la base de données.")
+
+    inserer_postes_json(postes_detectes)
+    print(f"Les informations des postes ont été enregistrées dans le fichier JSON.")
