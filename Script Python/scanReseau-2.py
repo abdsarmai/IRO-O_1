@@ -1,7 +1,12 @@
 #!/usr/bin/python3
-import json
 import subprocess
 import socket
+
+def get_device_category(ip):
+    if ip.endswith(".254") or "_gateway" in ip:
+        return "routeur"
+    else:
+        return "poste"
 
 def get_name_from_ip(ip):
     try:
@@ -23,7 +28,8 @@ def scan_reseau():
                     ip = elements[1][1:-1]
                     mac = elements[3]
                     nom = get_name_from_ip(ip)
-                    postes.append({"nom": nom, "ip": ip, "mac": mac})
+                    categorie = get_device_category(ip)
+                    postes.append({"nom": nom, "ip": ip, "mac": mac, "categorie": categorie})
         
         return postes
     except Exception as e:
@@ -40,12 +46,24 @@ def generer_page_php(postes):
         php_file.write("    <title>Affichage des postes</title>\n")
         php_file.write("</head>\n")
         php_file.write("<body>\n")
-        php_file.write("    <h1>Postes détectés</h1>\n")
+        php_file.write("    <h1>Postes et routeurs détectés</h1>\n")
+        php_file.write("    <h2>Postes</h2>\n")
         php_file.write("    <table border=\"1\">\n")
         php_file.write("        <tr><th>Nom</th><th>IP</th><th>MAC</th></tr>\n")
 
         for poste in postes:
-            php_file.write(f"        <tr><td>{poste['nom']}</td><td>{poste['ip']}</td><td>{poste['mac']}</td></tr>\n")
+            if poste['categorie'] == 'poste':
+                php_file.write(f"        <tr><td>{poste['nom']}</td><td>{poste['ip']}</td><td>{poste['mac']}</td></tr>\n")
+
+        php_file.write("    </table>\n")
+
+        php_file.write("    <h2>Routeurs</h2>\n")
+        php_file.write("    <table border=\"1\">\n")
+        php_file.write("        <tr><th>Nom</th><th>IP</th><th>MAC</th></tr>\n")
+
+        for poste in postes:
+            if poste['categorie'] == 'routeur':
+                php_file.write(f"        <tr><td>{poste['nom']}</td><td>{poste['ip']}</td><td>{poste['mac']}</td></tr>\n")
 
         php_file.write("    </table>\n")
         php_file.write("</body>\n")
@@ -55,4 +73,4 @@ if __name__ == "__main__":
     postes_detectes = scan_reseau()
     
     generer_page_php(postes_detectes)
-    print(f"{len(postes_detectes)} postes ont été détectés et la page PHP a été générée.")
+    print(f"{len(postes_detectes)} postes et routeurs ont été détectés et la page PHP a été générée.")
