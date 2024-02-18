@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-import json
+import mysql.connector
 import subprocess
 import socket
 
@@ -37,14 +37,32 @@ def scan_reseau():
         print(f"Erreur lors du scan du réseau : {e}")
         return []
 
-def generer_page_json(postes):
-    data = {"postes": postes}
+def inserer_donnees(postes):
+    try:
+        connection = mysql.connector.connect(
+            host="localhost",
+            user="superviseur",
+            password="azerty",
+            database="RESEAU_LISSER"
+        )
+        cursor = connection.cursor()
 
-    with open("postes.json", "w") as json_file:
-        json.dump(data, json_file)
+        for poste in postes:
+            cursor.execute("INSERT INTO postes (nom, ip, mac) VALUES (%s, %s, %s)", 
+                           (poste["nom"], poste["ip"], poste["mac"]))
+        
+        connection.commit()
+        print(f"{len(postes)} postes et routeurs ont été détectés et les données ont été insérées dans la base de données.")
+    
+    except Exception as e:
+        print(f"Erreur lors de l'insertion des données dans la base de données : {e}")
+
+    finally:
+        if connection.is_connected():
+            cursor.close()
+            connection.close()
 
 if __name__ == "__main__":
     postes_detectes = scan_reseau()
     
-    generer_page_json(postes_detectes)
-    print(f"{len(postes_detectes)} postes et routeurs ont été détectés et le fichier JSON a été généré.")
+    inserer_donnees(postes_detectes)
