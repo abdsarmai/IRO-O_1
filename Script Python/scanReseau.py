@@ -41,14 +41,14 @@ def inserer_donnees(postes):
     try:
         connection = mysql.connector.connect(
             host="localhost",
-            user="superviseur",
+            user="adminAbdallah",
             password="azerty",
-            database="RESEAU_LISSER"
+            database="RESEAU_IRO_O"
         )
         cursor = connection.cursor()
 
         for poste in postes:
-            cursor.execute("INSERT INTO postes (nom, ip, mac) VALUES (%s, %s, %s)", 
+            cursor.execute("INSERT INTO element (nom, ip, mac) VALUES (%s, %s, %s)", 
                            (poste["nom"], poste["ip"], poste["mac"]))
         
         connection.commit()
