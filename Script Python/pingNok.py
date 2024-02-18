@@ -14,7 +14,7 @@ def ping_nok(hostname):
         return True  
 
 if __name__ == "__main__":
-    adresse_poste_inexistant = "192.168.17.250" # Adresse non attribuée au réseau IRO-O
+    adresse_poste_inexistant = "192.168.1.250" # Adresse non attribuée au réseau IRO-O
 
     if ping_nok(adresse_poste_inexistant):
         print("Le ping vers le poste de travail inexistant a échoué.")
