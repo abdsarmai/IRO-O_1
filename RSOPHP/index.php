@@ -4,7 +4,7 @@
 $servername = "localhost";
 $username = "superviseur";
 $password = "azerty";
-$dbname = "RESEAU_LISSER";
+$dbname = "RESEAU_IRO_O";
 
 $conn = new mysqli($servername, $username, $password, $dbname);
 
@@ -23,12 +23,6 @@ echo '</head>';
 echo '<body>';
 echo '<h1>Visualisation des Périphériques dans le réseau</h1>';
 echo '<div class="container">';
-
-// Utilise les données récupérées du fichier JSON
-$json_content = file_get_contents('postes.json');
-$data = json_decode($json_content, true);
-
-$types = ['poste', 'routeur']; // Les catégories possibles
 
 foreach ($types as $type) {
     echo "<h2>" . ucfirst($type) . "s</h2>";
