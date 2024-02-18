@@ -14,7 +14,7 @@ def ping_ok(hostname):
         return False
 
 if __name__ == "__main__":
-    adresse_poste_de_travail = "172.20.37.46" #Adresse IP du poste de Georges MAHOPP TS1SIO
+    adresse_poste_de_travail = "192.168.1.122" #Adresse IP de l'IMP de IRO-O
 
     if ping_ok(adresse_poste_de_travail):
         print("Le ping vers le poste de travail a réussi.")
