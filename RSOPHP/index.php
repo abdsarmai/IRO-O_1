@@ -1,8 +1,8 @@
 <?php
 
 // Connexion à la base de données
-$servername = "localhost";
-$username = "superviseur";
+$servername = "192.168.1.64";
+$username = "adminAbdallah";
 $password = "azerty";
 $dbname = "RESEAU_IRO_O";
 
