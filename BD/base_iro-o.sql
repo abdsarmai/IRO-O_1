@@ -1,9 +1,9 @@
 -- Commande pour créer la base de données 
 CREATE DATABASE RESEAU_IRO_O;
 -- Commande pour créer l'utilisateur adminJonathan avec le mot de passe azerty
-CREATE USER 'adminAbdallah'@'localhost' IDENTIFIED BY 'azerty';
+CREATE USER 'adminAbdallah'@'192.168.1.64' IDENTIFIED BY 'azerty';
 -- Commande pour donner tous les droits au compte adminJonathan
-GRANT ALL PRIVILEGES ON RESEAU_IRO_O.* TO 'adminAbdallah'@'localhost';
+GRANT ALL PRIVILEGES ON RESEAU_IRO_O.* TO 'adminAbdallah'@'192.168.1.64';
 FLUSH PRIVILEGES;
 -- Commande pour se placer dans la base de données RESEAU_IRO_O
 USE RESEAU_IRO_O;
