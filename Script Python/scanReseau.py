@@ -40,10 +40,10 @@ def scan_reseau():
 def inserer_donnees(postes):
     try:
         connection = mysql.connector.connect(
-            host="192.168.1.64",
-            user="adminAbdallah",
+            host="localhost",
+            user="superviseur",
             password="azerty",
-            database="RESEAU_IRO_O"
+            database="RESEAU_LISSER"
         )
         cursor = connection.cursor()
 
